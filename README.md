@@ -1,6 +1,6 @@
 # UNU Master Data API
 
-> **Single source of truth** untuk seluruh data kepegawaian di lingkungan Universitas Nahdlatul Ulama.
+> **Single source of truth** for all employee data across Universitas Nahdlatul Ulama.
 
 [![Go](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![Fiber](https://img.shields.io/badge/Fiber-v2-00ACD7?logo=go&logoColor=white)](https://gofiber.io)
@@ -9,73 +9,73 @@
 
 ---
 
-## 📋 Daftar Isi
+## 📋 Table of Contents
 
-- [Latar Belakang](#-latar-belakang)
+- [Background](#-background)
 - [Tech Stack](#-tech-stack)
-- [Arsitektur](#-arsitektur)
+- [Architecture](#-architecture)
 - [Quick Start](#-quick-start)
 - [API Usage](#-api-usage)
-- [Dokumentasi](#-dokumentasi)
-- [Standar Pengembangan](#-standar-pengembangan)
-- [Struktur Proyek](#-struktur-proyek)
+- [Documentation](#-documentation)
+- [Development Standards](#-development-standards)
+- [Project Structure](#-project-structure)
 
 ---
 
-## 🎯 Latar Belakang
+## 🎯 Background
 
-### Masalah
-Saat ini, setiap service di UNU (SIOBA, Presensi, Cuti, Anggaran, dll.) mengakses data kepegawaian secara langsung dan **mengambil seluruh data** meskipun hanya membutuhkan sebagian kecil. Ini menyebabkan:
+### Problem
+Currently, each service at UNU (SIOBA, Presensi, Cuti, Anggaran, etc.) accesses employee data directly and **fetches all data** even when only a small subset is needed. This causes:
 
-- ❌ **Redundansi data** — setiap response berisi field yang tidak diperlukan
-- ❌ **Inkonsistensi** — format data berbeda antar service
-- ❌ **Duplikasi logic** — setiap service menulis transformasi datanya sendiri
-- ❌ **Performance** — bandwidth terbuang untuk data yang tidak dipakai
+- ❌ **Data redundancy** — every response contains unnecessary fields
+- ❌ **Inconsistency** — data formats differ across services
+- ❌ **Logic duplication** — each service writes its own data transformation
+- ❌ **Performance** — bandwidth wasted on unused data
 
-### Solusi
-Master Data API menyediakan **satu endpoint terpusat** menggunakan **JSON-RPC 2.0** dengan kemampuan **field selection**, sehingga setiap service hanya menerima data yang dibutuhkan.
+### Solution
+Master Data API provides a **single centralized endpoint** using **JSON-RPC 2.0** with **field selection** capability, so each service only receives the data it needs.
 
 ```
-Sebelum: 15 service × 122 field = data redundant
-Sesudah: 15 service × 7-12 field = efisien (~90% lebih ringan)
+Before: 15 services × 122 fields = redundant data
+After:  15 services × 7-12 fields = efficient (~90% lighter)
 ```
 
 ---
 
 ## 🛠 Tech Stack
 
-| Teknologi | Versi | Kategori | Alasan |
-|:----------|:------|:---------|:-------|
-| **Go** | 1.22+ | Language | Performa tinggi, concurrency built-in, binary tunggal |
-| **Fiber** | v2.x | HTTP Framework | Berbasis fasthttp (10x net/http), API Express-like |
-| **pgx** | v5.x | DB Driver | Native PostgreSQL driver Go tercepat, connection pooling |
+| Technology | Version | Category | Rationale |
+|:-----------|:--------|:---------|:----------|
+| **Go** | 1.22+ | Language | High performance, built-in concurrency, single binary |
+| **Fiber** | v2.x | HTTP Framework | Built on fasthttp (10x net/http), Express-like API |
+| **pgx** | v5.x | DB Driver | Fastest native PostgreSQL driver for Go, connection pooling |
 | **zerolog** | latest | Logging | Zero-allocation structured logging, JSON output |
 | **validator** | v10 | Validation | Declarative struct validation via tags |
-| **PostgreSQL** | 15+ | Database | RDBMS andal, JSON support, query power |
+| **PostgreSQL** | 15+ | Database | Reliable RDBMS, JSON support, powerful queries |
 | **Docker** | latest | Container | Reproducible builds, easy deployment |
-| **Redis** | 7+ | Cache (opsional) | Shared cache untuk multiple instances |
+| **Redis** | 7+ | Cache (optional) | Shared cache for multiple instances |
 
-### Mengapa Go + Fiber?
+### Go + Fiber
 
-1. **Performance** — Go compiled language dengan garbage collection yang efisien. Fiber berbasis `fasthttp` yang memberikan throughput 10x lipat dibanding `net/http`.
-2. **Simplicity** — Syntax sederhana, learning curve rendah, stdlib yang kaya.
-3. **Concurrency** — Goroutines dan channels memudahkan handle thousands of concurrent connections.
-4. **Single Binary** — Deploy cukup satu binary file, tanpa dependency runtime.
-5. **Fiber Ecosystem** — Middleware yang lengkap: CORS, rate limiter, recover, logger, dll.
+1. **Performance** — Go is a compiled language with efficient garbage collection. Fiber is built on `fasthttp`, providing 10x throughput compared to `net/http`.
+2. **Simplicity** — Clean syntax, low learning curve, rich standard library.
+3. **Concurrency** — Goroutines and channels make handling thousands of concurrent connections easy.
+4. **Single Binary** — Deploy with just one binary file, no runtime dependencies.
+5. **Fiber Ecosystem** — Comprehensive middleware: CORS, rate limiter, recover, logger, etc.
 
-### Mengapa JSON-RPC 2.0?
+### JSON-RPC 2.0
 
-1. **Single Endpoint** — Semua method melalui `POST /rpc`, sederhana.
-2. **Batch Support** — Kirim multiple request dalam satu HTTP call.
-3. **Explicit Method** — Method naming yang jelas: `employee.getPrimary`.
-4. **Error Standard** — Error codes yang terstandarisasi.
-5. **Field Selection** — Params object memungkinkan `fields` parameter secara natural.
+1. **Single Endpoint** — All methods through `POST /rpc`, simple routing.
+2. **Batch Support** — Send multiple requests in a single HTTP call.
+3. **Explicit Methods** — Clear method naming: `employee.getPrimary`.
+4. **Standard Errors** — Standardized error codes.
+5. **Field Selection** — Params object naturally supports a `fields` parameter.
 
 ---
 
-## 🏗 Arsitektur
+## 🏗 Architecture
 
-Menggunakan **Flat DDD** dengan Bounded Context:
+Uses **Flat DDD** with Bounded Contexts:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -105,7 +105,7 @@ Menggunakan **Flat DDD** dengan Bounded Context:
                                      └───────────────┘
 ```
 
-> Detail lengkap: [docs/architecture.md](docs/architecture.md)
+> Full details: [docs/architecture.md](docs/architecture.md)
 
 ---
 
@@ -115,7 +115,7 @@ Menggunakan **Flat DDD** dengan Bounded Context:
 
 - Go 1.22+
 - PostgreSQL 15+
-- Docker & Docker Compose (opsional)
+- Docker & Docker Compose (optional)
 
 ### Development
 
@@ -132,7 +132,7 @@ go mod download
 
 # Run development server
 make dev
-# atau
+# or
 go run cmd/server/main.go
 ```
 
@@ -148,9 +148,9 @@ docker-compose logs -f app
 
 ### Environment Variables
 
-| Variable | Default | Deskripsi |
-|:---------|:--------|:----------|
-| `APP_PORT` | `3000` | Port HTTP server |
+| Variable | Default | Description |
+|:---------|:--------|:------------|
+| `APP_PORT` | `3000` | HTTP server port |
 | `APP_ENV` | `development` | Environment (development/production) |
 | `DB_HOST` | `localhost` | PostgreSQL host |
 | `DB_PORT` | `5432` | PostgreSQL port |
@@ -159,8 +159,8 @@ docker-compose logs -f app
 | `DB_PASSWORD` | — | Database password |
 | `DB_MAX_CONNS` | `25` | Max connection pool |
 | `CACHE_TTL_MINUTES` | `5` | Cache TTL in minutes |
-| `REDIS_URL` | — | Redis URL (opsional) |
-| `API_KEY` | — | API key untuk autentikasi |
+| `REDIS_URL` | — | Redis URL (optional) |
+| `API_KEY` | — | API key for authentication |
 
 ---
 
@@ -174,7 +174,7 @@ Content-Type: application/json
 X-API-Key: <your-api-key>
 ```
 
-### Contoh: Ambil Data Primer Pegawai
+### Example: Get Primary Employee Data
 
 **Request:**
 ```json
@@ -208,7 +208,7 @@ X-API-Key: <your-api-key>
 }
 ```
 
-### Contoh: Batch Request
+### Example: Batch Request
 
 ```json
 [
@@ -229,33 +229,33 @@ X-API-Key: <your-api-key>
 
 ### Available Methods
 
-| Method | Deskripsi |
-|:-------|:----------|
-| `employee.getPrimary` | Data kepegawaian primer |
-| `employee.getSecondary` | Data kepegawaian sekunder (lengkap) |
-| `employee.search` | Cari pegawai |
-| `employee.getByWorkunit` | Pegawai per unit kerja |
-| `workunit.getAll` | Semua unit kerja |
-| `workunit.getById` | Detail unit kerja |
-| `workunit.getTree` | Hierarki unit kerja |
-| `position.getAll` | Semua jabatan |
-| `position.getByWorkunit` | Jabatan per unit kerja |
-| `position.getById` | Detail jabatan |
+| Method | Description |
+|:-------|:------------|
+| `employee.getPrimary` | Primary employee data |
+| `employee.getSecondary` | Secondary employee data (full) |
+| `employee.search` | Search employees |
+| `employee.getByWorkunit` | Employees by work unit |
+| `workunit.getAll` | All work units |
+| `workunit.getById` | Work unit details |
+| `workunit.getTree` | Work unit hierarchy |
+| `position.getAll` | All positions |
+| `position.getByWorkunit` | Positions by work unit |
+| `position.getById` | Position details |
 
 ---
 
-## 📚 Dokumentasi
+## 📚 Documentation
 
-| Dokumen | Deskripsi |
-|:--------|:----------|
-| [Arsitektur Sistem](docs/architecture.md) | DDD, bounded contexts, data flow, deployment |
-| [Data Catalog](docs/data-catalog.md) | Seluruh entitas dan field (169 fields) |
-| [Service Catalog](docs/service-catalog.md) | Pemetaan data per service consumer |
-| [Development Plan](docs/development-plan.md) | Sprint plan, tech rationale, estimasi |
+| Document | Description |
+|:---------|:------------|
+| [System Architecture](docs/architecture.md) | DDD, bounded contexts, data flow, deployment |
+| [Data Catalog](docs/data-catalog.md) | All entities and fields (169 fields) |
+| [Service Catalog](docs/service-catalog.md) | Data mapping per service consumer |
+| [Tech Stack](docs/tach-stack.md) | Tech selection rationale & coding standards |
 
 ---
 
-## 📏 Standar Pengembangan
+## 📏 Development Standards
 
 ### Code Style
 ```bash
@@ -268,8 +268,8 @@ golangci-lint run
 
 ### Naming Convention
 
-| Aspek | Konvensi | Contoh |
-|:------|:---------|:-------|
+| Aspect | Convention | Example |
+|:-------|:-----------|:--------|
 | Package | lowercase | `service`, `repository` |
 | Exported type | PascalCase | `EmployeeService` |
 | Unexported | camelCase | `parseRequest` |
@@ -283,9 +283,9 @@ if err != nil {
     return fmt.Errorf("fetch employee by nrp %s: %w", nrp, err)
 }
 
-// ❌ Hindari
+// ❌ Avoid
 if err != nil {
-    return err // tanpa konteks
+    return err // no context
 }
 ```
 
@@ -312,7 +312,7 @@ test: add workunit repository tests
 
 ---
 
-## 📁 Struktur Proyek
+## 📁 Project Structure
 
 ```
 master-api/

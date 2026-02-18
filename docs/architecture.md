@@ -1,42 +1,42 @@
-# Arsitektur Sistem — UNU Master Data API
+# System Architecture — UNU Master Data API
 
-## 1. Gambaran Umum
+## 1. Overview
 
-UNU Master Data API adalah **single source of truth** untuk seluruh data kepegawaian di lingkungan Universitas Nahdlatul Ulama. API ini menggantikan pola akses data yang redundant di mana setiap service mengambil seluruh data pegawai meskipun hanya membutuhkan sebagian field.
+UNU Master Data API is the **single source of truth** for all employee data across Universitas Nahdlatul Ulama. This API replaces the redundant data access pattern where each service fetches the entire employee dataset despite only needing a subset of fields.
 
-### Masalah yang Diselesaikan
+### Problem Solved
 
 ```
 ┌──────────┐     ┌──────────────┐
-│  SIOBA   │────▶│              │  ❌ Setiap service query langsung ke DB
-│  Presensi│────▶│   Database   │  ❌ Response berisi data yang tidak diperlukan
-│  Cuti    │────▶│  Kepegawaian │  ❌ Tidak ada standarisasi format data
-│  Agenda  │────▶│              │  ❌ Duplikasi logic transformasi data
+│  SIOBA   │────▶│              │  ❌ Each service queries DB directly
+│  Presensi│────▶│   Employee   │  ❌ Response contains unnecessary data
+│  Cuti    │────▶│   Database   │  ❌ No standardized data format
+│  Agenda  │────▶│              │  ❌ Duplicated transformation logic
 └──────────┘     └──────────────┘
 ```
 
-### Solusi: Centralized Master API
+### Solution: Centralized Master API
 
 ```
 ┌──────────┐     ┌───────────────────┐     ┌──────────────┐
 │  SIOBA   │────▶│                   │     │              │
-│  Presensi│────▶│  Master Data API  │────▶│   Database   │
-│  Cuti    │────▶│  (JSON-RPC 2.0)   │     │  Kepegawaian │
+│  Presensi│────▶│  Master Data API  │────▶│   Employee   │
+│  Cuti    │────▶│  (JSON-RPC 2.0)   │     │   Database   │
 │  Agenda  │────▶│                   │     │              │
 └──────────┘     └───────────────────┘     └──────────────┘
                    ✅ Single entry point
                    ✅ Field selection per service
-                   ✅ Standar format response
+                   ✅ Standardized response format
                    ✅ Centralized caching & logging
 ```
 
 ---
 
-## 2. Arsitektur Aplikasi
+## 2. Application Architecture
 
-### Domain-Driven Design — DDD
+### Domain-Driven Design — Flat DDD
 
-Menggunakan pendekatan **DDD** setiap domain bisnis diorganisasi sebagai flat package tanpa sub-folder:
+Each business domain is organized as a flat package without sub-folders:
 
 ```mermaid
 graph TB
@@ -84,7 +84,7 @@ graph TB
 
 ### File Description (per Domain)
 
-| File | Tanggung Jawab |
+| File | Responsibility |
 |:-----|:---------------|
 | `handler.go` | JSON-RPC method handler, parse params, call service, return response |
 | `service.go` | Business logic, use cases, field selection |
@@ -96,7 +96,7 @@ graph TB
 
 ### Shared Kernel
 
-| Package | Tanggung Jawab |
+| Package | Responsibility |
 |:--------|:---------------|
 | `internal/shared/config/` | Configuration loader |
 | `internal/shared/middleware/` | Fiber middleware (auth, rate limit, logger) |
@@ -106,19 +106,21 @@ graph TB
 
 ---
 
-## 3. Protokol: JSON-RPC 2.0
+## 3. Protocol: JSON-RPC 2.0
 
-### Mengapa JSON-RPC?
+### JSON-RPC vs REST
 
-| Aspek | REST | JSON-RPC 2.0 | Pilihan |
-|:------|:-----|:-------------|:--------|
-| Endpoint | Banyak URL path | Single endpoint `/rpc` | ✅ JSON-RPC |
-| Batch request | Tidak standar | Built-in | ✅ JSON-RPC |
+| Aspect | REST | JSON-RPC 2.0 | Choice |
+|:-------|:-----|:-------------|:-------|
+| Endpoint | Multiple URL paths | Single endpoint `/rpc` | ✅ JSON-RPC |
+| Batch request | Non-standard | Built-in | ✅ JSON-RPC |
 | Method naming | HTTP verbs + URL | Explicit method name | ✅ JSON-RPC |
-| Field selection | Query params (ad-hoc) | Params object (standar) | ✅ JSON-RPC |
-| Dokumentasi | OpenAPI/Swagger | Self-describing methods | ✅ JSON-RPC |
+| Field selection | Query params (ad-hoc) | Params object (standard) | ✅ JSON-RPC |
+| Documentation | OpenAPI/Swagger | Self-describing methods | ✅ JSON-RPC |
 
-### Format Request
+> JSON-RPC 2.0 requires `POST` because method name and parameters are sent as a JSON body — `GET` does not support request bodies per HTTP spec.
+
+### Request Format
 
 ```json
 {
@@ -132,7 +134,7 @@ graph TB
 }
 ```
 
-### Format Response
+### Response Format
 
 ```json
 {
@@ -154,7 +156,7 @@ graph TB
 
 ---
 
-## 4. Struktur Folder Proyek
+## 4. Project Folder Structure
 
 ```
 master-api/
@@ -164,7 +166,7 @@ master-api/
 ├── internal/
 │   ├── app/
 │   │   ├── app.go                       # Fiber app setup, DI wiring
-│   │   └── routes.go                    # Register semua domain handlers
+│   │   └── routes.go                    # Register all domain handlers
 │   ├── shared/                          # Shared Kernel
 │   │   ├── config/
 │   │   │   └── config.go                # Configuration loader
@@ -203,7 +205,7 @@ master-api/
 │   ├── architecture.md
 │   ├── data-catalog.md
 │   ├── service-catalog.md
-│   └── development-plan.md
+│   └── tach-stack.md
 ├── data/                                # Reference PDFs
 ├── go.mod
 ├── go.sum
@@ -250,12 +252,12 @@ sequenceDiagram
 
 ---
 
-## 6. Strategi Caching
+## 6. Caching Strategy
 
-| Level | Mekanisme | TTL | Keterangan |
-|:------|:----------|:----|:-----------|
+| Level | Mechanism | TTL | Description |
+|:------|:----------|:----|:------------|
 | L1 | In-memory (sync.Map) | 5 min | Hot data, per-instance |
-| L2 | Redis (opsional) | 15 min | Shared cache antar instance |
+| L2 | Redis (optional) | 15 min | Shared cache across instances |
 
 ### Cache Key Pattern
 ```
@@ -266,8 +268,8 @@ master-api:{method}:{hash(params)}
 
 ## 7. Security
 
-| Aspek | Implementasi |
-|:------|:-------------|
+| Aspect | Implementation |
+|:-------|:---------------|
 | **Authentication** | API Key via `X-API-Key` header |
 | **Rate Limiting** | Per-service throttling via Fiber middleware |
 | **Input Validation** | JSON-RPC params validation |

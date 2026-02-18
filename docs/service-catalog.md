@@ -1,21 +1,21 @@
 # Service Catalog — UNU Master Data API
 
-## Ringkasan
+## Summary
 
-Dokumen ini memetakan **seluruh service consumer** yang akan mengakses Master Data API beserta **data field spesifik** yang dibutuhkan oleh masing-masing service. Tujuannya adalah menghilangkan redundansi data dengan hanya mengembalikan field yang diperlukan.
+This document maps **all service consumers** that will access the Master Data API along with the **specific data fields** required by each service. The goal is to eliminate data redundancy by only returning the fields needed.
 
 ---
 
-## Pemetaan Service → Data Fields
+## Service → Data Field Mapping
 
-### 1. SIOBA (Sistem Informasi Akademik)
+### 1. SIOBA (Academic Information System)
 
-| Aspek | Detail |
-|:------|:-------|
+| Aspect | Detail |
+|:-------|:-------|
 | **Platform** | Web |
-| **Proses** | Module management, role management, user management, curriculum, class management, RPKPS, ujian, portfolio |
+| **Process** | Module management, role management, user management, curriculum, class management, RPKPS, exams, portfolio |
 
-**Fields yang dibutuhkan:**
+**Required fields:**
 
 ```json
 {
@@ -38,23 +38,23 @@ Dokumen ini memetakan **seluruh service consumer** yang akan mengakses Master Da
 
 ---
 
-### 2. Presensi (Sistem Kehadiran)
+### 2. Presensi (Attendance System)
 
 #### 2.1 Mobile Apps — Clock In/Out
 
-| Aspek | Detail |
-|:------|:-------|
+| Aspect | Detail |
+|:-------|:-------|
 | **Platform** | Mobile Apps |
-| **Proses** | Absensi masuk/keluar, pengajuan izin, riwayat kehadiran |
+| **Process** | Clock in/out, leave requests, attendance history |
 
 **Fields:** `id_pegawai`, `status`, `status_keaktifan`, `nrp`, `email`, `nama_lengkap`, `unit_kerja`, `jabatan_struktural`, `tipe_jam_kerja`
 
-#### 2.2 Sistem Internal — Approval & Monitoring
+#### 2.2 Internal System — Approval & Monitoring
 
-| Aspek | Detail |
-|:------|:-------|
-| **Platform** | Sistem Internal |
-| **Proses** | Persetujuan dan monitoring kehadiran |
+| Aspect | Detail |
+|:-------|:-------|
+| **Platform** | Internal System |
+| **Process** | Attendance approval and monitoring |
 
 **Fields:** `id_pegawai`, `status`, `status_keaktifan`, `nrp`, `email`, `nama_lengkap`, `unit_kerja`, `jabatan_struktural`, `izin_akses_backoffice_presensi`
 
@@ -62,10 +62,10 @@ Dokumen ini memetakan **seluruh service consumer** yang akan mengakses Master Da
 
 ### 3. Agenda & Calendar
 
-| Aspek | Detail |
-|:------|:-------|
+| Aspect | Detail |
+|:-------|:-------|
 | **Platform** | Mobile Apps & Greenteam Web |
-| **Proses** | Pembuatan agenda (booking ruang, undangan), kalender, verifikasi kehadiran |
+| **Process** | Create agendas (room booking, invitations), calendar, attendance verification |
 
 **Fields:** `id_pegawai`, `status`, `status_keaktifan`, `nrp`, `email`, `nama_lengkap`, `unit_kerja`, `jabatan_struktural`, `no_wa`
 
@@ -73,10 +73,10 @@ Dokumen ini memetakan **seluruh service consumer** yang akan mengakses Master Da
 
 ### 4. Ruang (Room Booking)
 
-| Aspek | Detail |
-|:------|:-------|
-| **Platform** | Sistem Internal |
-| **Proses** | Persetujuan peminjaman ruang |
+| Aspect | Detail |
+|:-------|:-------|
+| **Platform** | Internal System |
+| **Process** | Room booking approval |
 
 **Fields:** `id_pegawai`, `status`, `status_keaktifan`, `nrp`, `email`, `nama_lengkap`, `unit_kerja`, `jabatan_struktural`, `izin_akses_backoffice_ruang`
 
@@ -84,12 +84,12 @@ Dokumen ini memetakan **seluruh service consumer** yang akan mengakses Master Da
 
 ### 5. Kupon (Voucher Service)
 
-#### 5.1 Greenteam Web & Sistem Internal
+#### 5.1 Greenteam Web & Internal System
 
-| Aspek | Detail |
-|:------|:-------|
-| **Platform** | Greenteam Web & Sistem Internal |
-| **Proses** | Scan kupon, riwayat, monitoring penggunaan |
+| Aspect | Detail |
+|:-------|:-------|
+| **Platform** | Greenteam Web & Internal System |
+| **Process** | Scan vouchers, history, usage monitoring |
 
 **Fields:** `id_pegawai`, `status`, `status_keaktifan`, `nrp`, `email`, `nama_lengkap`, `unit_kerja`, `jabatan_struktural`, `izin_akses_backoffice_kupon`
 
@@ -97,21 +97,21 @@ Dokumen ini memetakan **seluruh service consumer** yang akan mengakses Master Da
 
 ### 6. Cuti (Leave Request)
 
-#### 6.1 Greenteam Web & Mobile — Pengajuan
+#### 6.1 Greenteam Web & Mobile — Submission
 
-| Aspek | Detail |
-|:------|:-------|
+| Aspect | Detail |
+|:-------|:-------|
 | **Platform** | Greenteam Web & Mobile Apps |
-| **Proses** | Pengajuan cuti dan riwayat |
+| **Process** | Leave requests and history |
 
 **Fields:** `id_pegawai`, `status`, `status_keaktifan`, `nrp`, `email`, `nama_lengkap`, `unit_kerja`, `jabatan_struktural`, `id_atasan_langsung`, `sisa_cuti`
 
-#### 6.2 Sistem Internal — Approval
+#### 6.2 Internal System — Approval
 
-| Aspek | Detail |
-|:------|:-------|
-| **Platform** | Sistem Internal |
-| **Proses** | Persetujuan oleh pimpinan dan admin |
+| Aspect | Detail |
+|:-------|:-------|
+| **Platform** | Internal System |
+| **Process** | Approval by superiors and admins |
 
 **Fields:** `nama_lengkap`, `unit_kerja`, `jabatan_struktural`, `akses_approval_cuti`, `daftar_bawahan_langsung`
 
@@ -119,21 +119,21 @@ Dokumen ini memetakan **seluruh service consumer** yang akan mengakses Master Da
 
 ### 7. Peminjaman Barang (Asset Loan)
 
-#### 7.1 Greenteam Web — Pengajuan
+#### 7.1 Greenteam Web — Submission
 
-| Aspek | Detail |
-|:------|:-------|
+| Aspect | Detail |
+|:-------|:-------|
 | **Platform** | Greenteam Web |
-| **Proses** | Pengajuan dan riwayat peminjaman |
+| **Process** | Loan requests and history |
 
 **Fields:** `id_pegawai`, `status`, `status_keaktifan`, `nrp`, `email`, `nama_lengkap`, `no_wa`
 
-#### 7.2 Sistem Internal — Approval
+#### 7.2 Internal System — Approval
 
-| Aspek | Detail |
-|:------|:-------|
-| **Platform** | Sistem Internal |
-| **Proses** | Persetujuan peminjaman |
+| Aspect | Detail |
+|:-------|:-------|
+| **Platform** | Internal System |
+| **Process** | Loan approval |
 
 **Fields:** `id_pegawai`, `status`, `status_keaktifan`, `nrp`, `email`, `nama_lengkap`, `akses_approval_peminjaman`, `daftar_bawahan_langsung`
 
@@ -141,10 +141,10 @@ Dokumen ini memetakan **seluruh service consumer** yang akan mengakses Master Da
 
 ### 8. Dokumen (Document Management)
 
-| Aspek | Detail |
-|:------|:-------|
-| **Platform** | Sistem Internal, Greenteam Web, Mobile Apps |
-| **Proses** | Upload, cek, tanda tangan, arsip, kirim, dan lihat dokumen |
+| Aspect | Detail |
+|:-------|:-------|
+| **Platform** | Internal System, Greenteam Web, Mobile Apps |
+| **Process** | Upload, check, sign, archive, send, and view documents |
 
 **Fields:** `id_pegawai`, `status`, `status_keaktifan`, `nrp`, `email`, `nama_lengkap`, `unit_kerja`, `jabatan_struktural`, `izin_akses_backoffice_dokumen`
 
@@ -152,71 +152,71 @@ Dokumen ini memetakan **seluruh service consumer** yang akan mengakses Master Da
 
 ### 9. Anggaran (Budget/Finance)
 
-| Aspek | Detail |
-|:------|:-------|
+| Aspect | Detail |
+|:-------|:-------|
 | **Platform** | Mobile Apps & Back Office |
-| **Proses** | Pengajuan, LPJ, persetujuan, pencairan |
+| **Process** | Budget requests, accountability reports, approvals, disbursements |
 
 **Fields:** `id_pegawai`, `status`, `status_keaktifan`, `nrp`, `email`, `nama_lengkap`, `unit_kerja`, `jabatan_struktural`, `no_wa`, `no_rekening`, `jenis_bank`, `izin_akses_backoffice_anggaran`
 
 ---
 
-### 10. Service Khusus
+### 10. Special Services
 
-#### 10.1 Ijazah
-| **Proses** | Cetak ijazah |
-|:-----------|:-------------|
+#### 10.1 Ijazah (Diploma)
+| **Process** | Diploma printing |
+|:-----------|:----------------|
 | **Fields** | `id_pegawai`, `status`, `status_keaktifan`, `nrp`, `email`, `nama_lengkap`, `akses_ijazah` |
 
 #### 10.2 CMS Web UNU
-| **Proses** | Content management |
+| **Process** | Content management |
 |:-----------|:------------------|
 | **Fields** | `id_pegawai`, `status`, `status_keaktifan`, `nrp`, `email`, `nama_lengkap`, `akses_cms` |
 
 #### 10.3 Ulang Tahun (Birthday)
-| **Proses** | Ucapan ulang tahun |
+| **Process** | Birthday greetings |
 |:-----------|:-------------------|
 | **Fields** | `id_pegawai`, `status`, `status_keaktifan`, `nrp`, `email`, `nama_lengkap`, `tanggal_lahir` |
 
 ---
 
-## Ringkasan Kebutuhan Field Per Service
+## Field Requirements Summary Per Service
 
 | # | Service | Total Fields | Domain |
 |:--|:--------|:-------------|:-------|
-| 1 | SIOBA | 9 | Primer |
-| 2 | Presensi (Mobile) | 9 | Primer |
-| 3 | Presensi (Internal) | 9 | Primer |
-| 4 | Agenda & Calendar | 9 | Primer |
-| 5 | Ruang | 9 | Primer |
-| 6 | Kupon | 9 | Primer |
-| 7 | Cuti (Pengajuan) | 10 | Primer |
-| 8 | Cuti (Approval) | 5 | Primer |
-| 9 | Peminjaman (Pengajuan) | 7 | Primer |
-| 10 | Peminjaman (Approval) | 8 | Primer |
-| 11 | Dokumen | 9 | Primer |
-| 12 | Anggaran | 12 | Primer |
-| 13 | Ijazah | 7 | Primer |
-| 14 | CMS Web | 7 | Primer |
-| 15 | Ulang Tahun | 7 | Primer |
+| 1 | SIOBA | 9 | Primary |
+| 2 | Presensi (Mobile) | 9 | Primary |
+| 3 | Presensi (Internal) | 9 | Primary |
+| 4 | Agenda & Calendar | 9 | Primary |
+| 5 | Ruang | 9 | Primary |
+| 6 | Kupon | 9 | Primary |
+| 7 | Cuti (Submission) | 10 | Primary |
+| 8 | Cuti (Approval) | 5 | Primary |
+| 9 | Peminjaman (Submission) | 7 | Primary |
+| 10 | Peminjaman (Approval) | 8 | Primary |
+| 11 | Dokumen | 9 | Primary |
+| 12 | Anggaran | 12 | Primary |
+| 13 | Ijazah | 7 | Primary |
+| 14 | CMS Web | 7 | Primary |
+| 15 | Ulang Tahun | 7 | Primary |
 
-> **Insight:** Sebagian besar service hanya membutuhkan **7–12 field** dari domain Primer, sedangkan data Sekunder berisi **122 field**. Tanpa field selection, setiap request mengembalikan ~110 field yang tidak diperlukan.
+> **Insight:** Most services only need **7–12 fields** from the Primary domain, while the Secondary data contains **122 fields**. Without field selection, each request returns ~110 unnecessary fields.
 
 ---
 
 ## JSON-RPC Method Registry
 
-| Method | Deskripsi | Domain |
-|:-------|:----------|:-------|
-| `employee.getPrimary` | Data kepegawaian primer per pegawai | Primer |
-| `employee.getSecondary` | Data kepegawaian sekunder per pegawai | Sekunder |
-| `employee.search` | Cari pegawai berdasarkan kriteria | Primer |
-| `employee.getByWorkunit` | Daftar pegawai per unit kerja | Primer |
-| `employee.getByPosition` | Daftar pegawai per jabatan | Primer |
-| `workunit.getAll` | Semua unit kerja | Unit Kerja |
-| `workunit.getById` | Detail unit kerja spesifik | Unit Kerja |
-| `workunit.getTree` | Hierarki unit kerja | Unit Kerja |
-| `position.getAll` | Semua jabatan | Jabatan |
-| `position.getByWorkunit` | Jabatan per unit kerja | Jabatan |
-| `position.getById` | Detail jabatan spesifik | Jabatan |
-| `service.getFieldMapping` | Mapping field per service | Meta |
+| Method | Description | Domain |
+|:-------|:------------|:-------|
+| `employee.getPrimary` | Primary employee data per employee | Primary |
+| `employee.getSecondary` | Secondary employee data per employee | Secondary |
+| `employee.search` | Search employees by criteria | Primary |
+| `employee.getByWorkunit` | List employees per work unit | Primary |
+| `employee.getByPosition` | List employees per position | Primary |
+| `workunit.getAll` | All work units | Work Unit |
+| `workunit.getById` | Specific work unit details | Work Unit |
+| `workunit.getTree` | Work unit hierarchy | Work Unit |
+| `position.getAll` | All positions | Position |
+| `position.getByWorkunit` | Positions per work unit | Position |
+| `position.getById` | Specific position details | Position |
+| `service.getFieldMapping` | Field mapping per service | Meta |
