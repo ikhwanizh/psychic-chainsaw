@@ -75,7 +75,7 @@ Sesudah: 15 service × 7-12 field = efisien (~90% lebih ringan)
 
 ## 🏗 Arsitektur
 
-Menggunakan **Flat DDD** (terinspirasi pattern `go-moneter`):
+Menggunakan **Flat DDD** dengan Bounded Context:
 
 ```
 ┌─────────────────────────────────────────────────────────┐
