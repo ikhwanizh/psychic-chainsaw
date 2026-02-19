@@ -2,7 +2,7 @@
 
 ## Summary
 
-This document maps **all service consumers** that will access the Master Data API along with the **specific data fields** required by each service. The goal is to eliminate data redundancy by only returning the fields needed.
+This document maps **all service consumers** that will access the Master Data API along with the **specific data fields** required by each service. The goal is to eliminate data redundancy by only returning the fields needed via the `?fields=` query parameter.
 
 ---
 
@@ -15,25 +15,10 @@ This document maps **all service consumers** that will access the Master Data AP
 | **Platform** | Web |
 | **Process** | Module management, role management, user management, curriculum, class management, RPKPS, exams, portfolio |
 
-**Required fields:**
+**Request:**
 
-```json
-{
-  "method": "employee.getPrimary",
-  "params": {
-    "fields": [
-      "id_pegawai",
-      "status",
-      "status_keaktifan",
-      "nrp",
-      "email",
-      "nama_lengkap",
-      "unit_kerja",
-      "jabatan_struktural"
-    ],
-    "extra": ["role_oba"]
-  }
-}
+```
+GET /api/employees/:nrp?fields=id_pegawai,status,status_keaktifan,nrp,email,nama_lengkap,unit_kerja,jabatan_struktural
 ```
 
 ---
@@ -204,19 +189,18 @@ This document maps **all service consumers** that will access the Master Data AP
 
 ---
 
-## JSON-RPC Method Registry
+## REST Endpoint Registry
 
-| Method | Description | Domain |
-|:-------|:------------|:-------|
-| `employee.getPrimary` | Primary employee data per employee | Primary |
-| `employee.getSecondary` | Secondary employee data per employee | Secondary |
-| `employee.search` | Search employees by criteria | Primary |
-| `employee.getByWorkunit` | List employees per work unit | Primary |
-| `employee.getByPosition` | List employees per position | Primary |
-| `workunit.getAll` | All work units | Work Unit |
-| `workunit.getById` | Specific work unit details | Work Unit |
-| `workunit.getTree` | Work unit hierarchy | Work Unit |
-| `position.getAll` | All positions | Position |
-| `position.getByWorkunit` | Positions per work unit | Position |
-| `position.getById` | Specific position details | Position |
-| `service.getFieldMapping` | Field mapping per service | Meta |
+| Method | Endpoint | Description | Domain |
+|:-------|:---------|:------------|:-------|
+| `GET` | `/api/employees/:nrp` | Primary employee data | Primary |
+| `GET` | `/api/employees/:nrp/secondary` | Full secondary data | Secondary |
+| `GET` | `/api/employees` | Search/list employees | Primary |
+| `GET` | `/api/employees?workunit_id=x` | Employees by work unit | Primary |
+| `GET` | `/api/employees?position_id=x` | Employees by position | Primary |
+| `GET` | `/api/workunits` | All work units | Work Unit |
+| `GET` | `/api/workunits/:id` | Specific work unit details | Work Unit |
+| `GET` | `/api/workunits/tree` | Work unit hierarchy | Work Unit |
+| `GET` | `/api/positions` | All positions | Position |
+| `GET` | `/api/positions?workunit_id=x` | Positions per work unit | Position |
+| `GET` | `/api/positions/:id` | Specific position details | Position |

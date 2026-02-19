@@ -2,13 +2,13 @@
 
 ## Summary
 
-This data catalog documents **all entities and fields** managed by the Master Data API. There are **4 main domains** with **169 fields** that can be selectively accessed by service consumers.
+This data catalog documents **all entities and fields** managed by the Master Data API. There are **4 main domains** with **169 fields** that can be selectively accessed by service consumers via the `?fields=` query parameter.
 
 ---
 
 ## Domain 1: Primary Employee Data
 
-> **Method:** `employee.getPrimary`
+> **Endpoint:** `GET /api/employees/:nrp`
 > **Description:** Core employee data most frequently accessed by UNU services.
 > **Total Fields:** 32
 
@@ -78,7 +78,7 @@ This data catalog documents **all entities and fields** managed by the Master Da
 
 ## Domain 2: Secondary Employee Data
 
-> **Method:** `employee.getSecondary`
+> **Endpoint:** `GET /api/employees/:nrp/secondary`
 > **Description:** Complete employee data including documents, family, and publications.
 > **Total Fields:** 122
 
@@ -298,7 +298,7 @@ This data catalog documents **all entities and fields** managed by the Master Da
 
 ## Domain 3: Work Unit Data
 
-> **Method:** `workunit.getAll`, `workunit.getById`
+> **Endpoint:** `GET /api/workunits`, `GET /api/workunits/:id`
 > **Description:** Organizational structure of university work units.
 > **Total Fields:** 7
 
@@ -316,7 +316,7 @@ This data catalog documents **all entities and fields** managed by the Master Da
 
 ## Domain 4: Position Data
 
-> **Method:** `position.getAll`, `position.getByWorkunit`
+> **Endpoint:** `GET /api/positions`, `GET /api/positions/:id`
 > **Description:** Position structure per work unit.
 > **Total Fields:** 8
 

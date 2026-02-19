@@ -21,7 +21,7 @@ UNU Master Data API is the **single source of truth** for all employee data acro
 ┌──────────┐     ┌───────────────────┐     ┌──────────────┐
 │  SIOBA   │────▶│                   │     │              │
 │  Presensi│────▶│  Master Data API  │────▶│   Employee   │
-│  Cuti    │────▶│  (JSON-RPC 2.0)   │     │   Database   │
+│  Cuti    │────▶│   (REST API)      │     │   Database   │
 │  Agenda  │────▶│                   │     │              │
 └──────────┘     └───────────────────┘     └──────────────┘
                    ✅ Single entry point
@@ -42,7 +42,7 @@ Each business domain is organized as a flat package without sub-folders:
 graph TB
     subgraph Shared["Shared Kernel"]
         HTTP["HTTP Server (Fiber)"]
-        RPC["JSON-RPC 2.0 Dispatcher"]
+        ROUTER["REST Router"]
         MW["Middleware (Auth, Rate Limit, Logger)"]
         CACHE["Cache Layer"]
     end
@@ -66,8 +66,8 @@ graph TB
         P_R["repo.go"]
     end
 
-    HTTP --> RPC
-    RPC --> MW
+    HTTP --> ROUTER
+    ROUTER --> MW
     MW --> E_H
     MW --> W_H
     MW --> P_H
@@ -86,7 +86,7 @@ graph TB
 
 | File | Responsibility |
 |:-----|:---------------|
-| `handler.go` | JSON-RPC method handler, parse params, call service, return response |
+| `handler.go` | REST endpoint handlers, parse path/query params, call service, return JSON response |
 | `service.go` | Business logic, use cases, field selection |
 | `repo.go` | Database access (PostgreSQL), repository interface + implementation |
 | `types.go` | Entity, DTOs, value objects, enums |
@@ -100,59 +100,85 @@ graph TB
 |:--------|:---------------|
 | `internal/shared/config/` | Configuration loader |
 | `internal/shared/middleware/` | Fiber middleware (auth, rate limit, logger) |
-| `internal/shared/jsonrpc/` | JSON-RPC 2.0 request/response, dispatcher, errors |
+| `internal/shared/response/` | Standard JSON response helpers (success, error) |
 | `internal/shared/cache/` | Cache abstraction |
 | `internal/app/` | Fiber app bootstrap, DI wiring, route registration |
 
 ---
 
-## 3. Protocol: JSON-RPC 2.0
+## 3. Protocol: REST API
 
-### JSON-RPC vs REST
+### Rationale
 
-| Aspect | REST | JSON-RPC 2.0 | Choice |
-|:-------|:-----|:-------------|:-------|
-| Endpoint | Multiple URL paths | Single endpoint `/rpc` | ✅ JSON-RPC |
-| Batch request | Non-standard | Built-in | ✅ JSON-RPC |
-| Method naming | HTTP verbs + URL | Explicit method name | ✅ JSON-RPC |
-| Field selection | Query params (ad-hoc) | Params object (standard) | ✅ JSON-RPC |
-| Documentation | OpenAPI/Swagger | Self-describing methods | ✅ JSON-RPC |
+| # | Reason | Detail |
+|:--|:-------|:-------|
+| 1 | **Native HTTP Caching** | GET requests are cacheable by browsers, CDNs, and reverse proxies (Nginx) without extra code |
+| 2 | **Monitoring & Debugging** | Each endpoint appears separately in access logs and APM tools — no need to parse request bodies |
+| 3 | **Tooling Ecosystem** | OpenAPI/Swagger auto-generates docs, client SDKs, and mock servers; endpoints testable via browser |
+| 4 | **Granular Rate Limiting** | Rate limits can be set per-endpoint at the infrastructure level without parsing request bodies |
+| 5 | **Read-Only API = Perfect GET** | This API is 100% read-only — GET is semantically correct: safe, idempotent, and cacheable |
+| 6 | **Horizontal Scalability** | Stateless GET requests are easily load-balanced; CDNs can cache popular endpoints at edge |
 
-> JSON-RPC 2.0 requires `POST` because method name and parameters are sent as a JSON body — `GET` does not support request bodies per HTTP spec.
+### Endpoint Design
 
-### Request Format
+| Method | Endpoint | Description |
+|:-------|:---------|:------------|
+| `GET` | `/api/employees/:nrp` | Primary employee data |
+| `GET` | `/api/employees/:nrp/secondary` | Full secondary data |
+| `GET` | `/api/employees` | Search/list employees |
+| `GET` | `/api/employees?workunit_id=x` | Employees by work unit |
+| `GET` | `/api/workunits` | All work units |
+| `GET` | `/api/workunits/tree` | Work unit hierarchy |
+| `GET` | `/api/workunits/:id` | Work unit details |
+| `GET` | `/api/positions` | All positions |
+| `GET` | `/api/positions?workunit_id=x` | Positions by work unit |
+| `GET` | `/api/positions/:id` | Position details |
 
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "employee.getPrimary",
-  "params": {
-    "nrp": "123456",
-    "fields": ["nama_lengkap", "email", "unit_kerja", "jabatan_struktural"]
-  },
-  "id": 1
-}
+### Field Selection
+
+All endpoints support the `?fields=` query parameter to request only specific fields:
+
+```
+GET /api/employees/123456?fields=nama_lengkap,email,unit_kerja
 ```
 
-### Response Format
+Without `?fields=`, all available fields are returned.
+
+### Success Response Format
 
 ```json
 {
-  "jsonrpc": "2.0",
-  "result": {
+  "success": true,
+  "data": {
     "nrp": "123456",
     "nama_lengkap": "Dr. Ahmad Fauzi, M.Kom.",
-    "email": "ahmad.fauzi@unu.ac.id",
-    "unit_kerja": {
-      "id": "uk-001",
-      "name": "Fakultas Sains dan Teknologi",
-      "code": "FST"
-    },
-    "jabatan_struktural": "Dekan"
-  },
-  "id": 1
+    "email": "ahmad.fauzi@unu.ac.id"
+  }
 }
 ```
+
+### Error Response Format
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "EMPLOYEE_NOT_FOUND",
+    "message": "Employee with NRP 999999 not found"
+  }
+}
+```
+
+### HTTP Status Codes
+
+| Status | Usage |
+|:-------|:------|
+| `200 OK` | Successful request |
+| `400 Bad Request` | Invalid parameters or query |
+| `401 Unauthorized` | Missing or invalid API key |
+| `404 Not Found` | Resource not found |
+| `429 Too Many Requests` | Rate limit exceeded |
+| `500 Internal Server Error` | Unexpected server error |
 
 ---
 
@@ -166,7 +192,7 @@ master-api/
 ├── internal/
 │   ├── app/
 │   │   ├── app.go                       # Fiber app setup, DI wiring
-│   │   └── routes.go                    # Register all domain handlers
+│   │   └── routes.go                    # Register all domain routes
 │   ├── shared/                          # Shared Kernel
 │   │   ├── config/
 │   │   │   └── config.go                # Configuration loader
@@ -174,16 +200,13 @@ master-api/
 │   │   │   ├── auth.go                  # API Key authentication
 │   │   │   ├── ratelimit.go             # Per-service rate limiting
 │   │   │   └── logger.go               # Request/response logging
-│   │   ├── jsonrpc/
-│   │   │   ├── request.go               # JSON-RPC 2.0 request types
-│   │   │   ├── response.go              # JSON-RPC 2.0 response types
-│   │   │   ├── dispatcher.go            # Method router & dispatcher
-│   │   │   └── errors.go               # Standard error codes
+│   │   ├── response/
+│   │   │   └── response.go             # Standard JSON response helpers
 │   │   └── cache/
 │   │       └── cache.go                 # Cache abstraction
 │   ├── employee/                        # Domain: Employee
 │   │   ├── mocks/                       # Generated mocks
-│   │   ├── handler.go                   # JSON-RPC method handlers
+│   │   ├── handler.go                   # REST endpoint handlers
 │   │   ├── service.go                   # Business logic + field selection
 │   │   ├── repo.go                      # PostgreSQL repository
 │   │   ├── types.go                     # Entity, DTOs, value objects
@@ -225,16 +248,19 @@ master-api/
 sequenceDiagram
     participant C as Client Service
     participant F as Fiber HTTP
-    participant R as JSON-RPC Router
+    participant R as Router
     participant M as Middleware
+    participant H as Handler
     participant S as Service
     participant CA as Cache
     participant DB as Database
 
-    C->>F: POST /rpc (JSON-RPC Request)
-    F->>R: Parse & Route by method
+    C->>F: GET /api/employees/123456?fields=nama_lengkap,email
+    F->>R: Route to employee handler
     R->>M: Auth + Rate Limit + Logging
-    M->>S: Call service method
+    M->>H: Call handler
+    H->>H: Parse path params & query params
+    H->>S: Call service method
     S->>CA: Check cache
     alt Cache hit
         CA-->>S: Return cached data
@@ -244,10 +270,8 @@ sequenceDiagram
         S->>S: Apply field selection
         S->>CA: Store in cache
     end
-    S-->>M: Filtered response
-    M-->>R: Response
-    R-->>F: JSON-RPC Response
-    F-->>C: HTTP 200 + JSON body
+    S-->>H: Filtered result
+    H-->>C: HTTP 200 + JSON response
 ```
 
 ---
@@ -261,7 +285,7 @@ sequenceDiagram
 
 ### Cache Key Pattern
 ```
-master-api:{method}:{hash(params)}
+master-api:{endpoint}:{hash(params)}
 ```
 
 ---
@@ -272,7 +296,7 @@ master-api:{method}:{hash(params)}
 |:-------|:---------------|
 | **Authentication** | API Key via `X-API-Key` header |
 | **Rate Limiting** | Per-service throttling via Fiber middleware |
-| **Input Validation** | JSON-RPC params validation |
+| **Input Validation** | Query/path parameter validation |
 | **CORS** | Configurable allowed origins |
 | **Logging** | Structured logging (zerolog) |
 

@@ -4,7 +4,7 @@
 
 [![Go](https://img.shields.io/badge/Go-1.22+-00ADD8?logo=go&logoColor=white)](https://go.dev)
 [![Fiber](https://img.shields.io/badge/Fiber-v2-00ACD7?logo=go&logoColor=white)](https://gofiber.io)
-[![JSON-RPC](https://img.shields.io/badge/Protocol-JSON--RPC%202.0-333)](https://www.jsonrpc.org/specification)
+[![REST](https://img.shields.io/badge/Protocol-REST%20API-333)](https://restfulapi.net)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-15+-4169E1?logo=postgresql&logoColor=white)](https://postgresql.org)
 
 ---
@@ -33,7 +33,7 @@ Currently, each service at UNU (SIOBA, Presensi, Cuti, Anggaran, etc.) accesses 
 - ❌ **Performance** — bandwidth wasted on unused data
 
 ### Solution
-Master Data API provides a **single centralized endpoint** using **JSON-RPC 2.0** with **field selection** capability, so each service only receives the data it needs.
+Master Data API provides **centralized REST endpoints** with **field selection** capability, so each service only receives the data it needs.
 
 ```
 Before: 15 services × 122 fields = redundant data
@@ -63,13 +63,13 @@ After:  15 services × 7-12 fields = efficient (~90% lighter)
 4. **Single Binary** — Deploy with just one binary file, no runtime dependencies.
 5. **Fiber Ecosystem** — Comprehensive middleware: CORS, rate limiter, recover, logger, etc.
 
-### JSON-RPC 2.0
+### REST API
 
-1. **Single Endpoint** — All methods through `POST /rpc`, simple routing.
-2. **Batch Support** — Send multiple requests in a single HTTP call.
-3. **Explicit Methods** — Clear method naming: `employee.getPrimary`.
-4. **Standard Errors** — Standardized error codes.
-5. **Field Selection** — Params object naturally supports a `fields` parameter.
+1. **Industry Standard** — Widely adopted, familiar to all developers.
+2. **HTTP Semantics** — Proper use of HTTP methods and status codes.
+3. **Cacheable** — GET requests are natively cacheable by browsers, CDNs, and proxies.
+4. **Tooling** — Testable via browser, curl, Postman without extra setup.
+5. **Field Selection** — Query parameter `?fields=` provides selective data retrieval.
 
 ---
 
@@ -82,11 +82,13 @@ Uses **Flat DDD** with Bounded Contexts:
 │                    CLIENT SERVICES                       │
 │  SIOBA │ Presensi │ Cuti │ Agenda │ Anggaran │ ...      │
 └────────┬────────────────────────────────────────────────┘
-         │ POST /rpc (JSON-RPC 2.0)
+         │ GET /api/employees/:nrp
+         │ GET /api/workunits
+         │ GET /api/positions
          ▼
 ┌─────────────────────────────────────────────────────────┐
 │               SHARED KERNEL                              │
-│  Fiber HTTP → JSON-RPC Dispatcher → Middleware            │
+│  Fiber HTTP → Router → Middleware (Auth, Rate Limit)     │
 └────┬──────────────────┬──────────────────┬─────────────────┘
      ▼                    ▼                    ▼
 ┌───────────────┐ ┌───────────────┐ ┌───────────────┐
@@ -166,34 +168,30 @@ docker-compose logs -f app
 
 ## 📡 API Usage
 
-### Endpoint
+### Base URL
 
 ```
-POST /rpc
-Content-Type: application/json
+http://localhost:3000/api
+```
+
+### Authentication
+
+```
 X-API-Key: <your-api-key>
 ```
 
 ### Example: Get Primary Employee Data
 
-**Request:**
-```json
-{
-  "jsonrpc": "2.0",
-  "method": "employee.getPrimary",
-  "params": {
-    "nrp": "123456",
-    "fields": ["nama_lengkap", "email", "unit_kerja", "jabatan_struktural"]
-  },
-  "id": 1
-}
+```bash
+curl -H "X-API-Key: test-key" \
+  "http://localhost:3000/api/employees/123456?fields=nama_lengkap,email,unit_kerja,jabatan_struktural"
 ```
 
 **Response:**
 ```json
 {
-  "jsonrpc": "2.0",
-  "result": {
+  "success": true,
+  "data": {
     "nrp": "123456",
     "nama_lengkap": "Dr. Ahmad Fauzi, M.Kom.",
     "email": "ahmad.fauzi@unu.ac.id",
@@ -203,44 +201,60 @@ X-API-Key: <your-api-key>
       "code": "FST"
     },
     "jabatan_struktural": "Dekan"
-  },
-  "id": 1
+  }
 }
 ```
 
-### Example: Batch Request
+### Example: List Employees by Work Unit
 
-```json
-[
-  {
-    "jsonrpc": "2.0",
-    "method": "employee.getPrimary",
-    "params": { "nrp": "123456", "fields": ["nama_lengkap", "email"] },
-    "id": 1
-  },
-  {
-    "jsonrpc": "2.0",
-    "method": "workunit.getAll",
-    "params": { "fields": ["name", "code"] },
-    "id": 2
-  }
-]
+```bash
+curl -H "X-API-Key: test-key" \
+  "http://localhost:3000/api/employees?workunit_id=uk-001&fields=nama_lengkap,email"
 ```
 
-### Available Methods
+### Available Endpoints
 
-| Method | Description |
+| Method | Endpoint | Description |
+|:-------|:---------|:------------|
+| `GET` | `/api/employees/:nrp` | Primary employee data |
+| `GET` | `/api/employees/:nrp/secondary` | Full secondary data |
+| `GET` | `/api/employees` | Search/list employees |
+| `GET` | `/api/workunits` | All work units |
+| `GET` | `/api/workunits/tree` | Work unit hierarchy |
+| `GET` | `/api/workunits/:id` | Work unit details |
+| `GET` | `/api/positions` | All positions |
+| `GET` | `/api/positions/:id` | Position details |
+
+### Field Selection
+
+Add `?fields=` query parameter to any endpoint:
+
+```
+GET /api/employees/123456?fields=nama_lengkap,email,unit_kerja
+```
+
+Only the requested fields are returned, reducing response size by ~90%.
+
+### Error Responses
+
+| Status | Description |
 |:-------|:------------|
-| `employee.getPrimary` | Primary employee data |
-| `employee.getSecondary` | Secondary employee data (full) |
-| `employee.search` | Search employees |
-| `employee.getByWorkunit` | Employees by work unit |
-| `workunit.getAll` | All work units |
-| `workunit.getById` | Work unit details |
-| `workunit.getTree` | Work unit hierarchy |
-| `position.getAll` | All positions |
-| `position.getByWorkunit` | Positions by work unit |
-| `position.getById` | Position details |
+| `200` | Success |
+| `400` | Bad request (invalid params) |
+| `401` | Unauthorized (missing/invalid API key) |
+| `404` | Resource not found |
+| `429` | Rate limit exceeded |
+| `500` | Internal server error |
+
+```json
+{
+  "success": false,
+  "error": {
+    "code": "EMPLOYEE_NOT_FOUND",
+    "message": "Employee with NRP 999999 not found"
+  }
+}
+```
 
 ---
 
@@ -270,7 +284,7 @@ golangci-lint run
 
 | Aspect | Convention | Example |
 |:-------|:-----------|:--------|
-| Package | lowercase | `service`, `repository` |
+| Package | lowercase | `employee`, `workunit` |
 | Exported type | PascalCase | `EmployeeService` |
 | Unexported | camelCase | `parseRequest` |
 | JSON key | snake_case | `nama_lengkap` |
@@ -303,7 +317,7 @@ go test ./internal/employee/... -v
 
 ### Git Convention
 ```
-feat: add employee primary data method
+feat: add employee primary data endpoint
 fix: handle null NIDN field
 docs: update data catalog
 refactor: extract field selector
@@ -322,10 +336,10 @@ master-api/
 │   ├── shared/                          # Shared kernel
 │   │   ├── config/                      # Configuration
 │   │   ├── middleware/                   # Auth, rate limit, logger
-│   │   ├── jsonrpc/                     # JSON-RPC 2.0 core
+│   │   ├── response/                    # Standard JSON response helpers
 │   │   └── cache/                       # Cache abstraction
 │   ├── employee/                        # Domain (flat DDD)
-│   │   ├── handler.go                   # JSON-RPC method handlers
+│   │   ├── handler.go                   # REST endpoint handlers
 │   │   ├── service.go                   # Business logic
 │   │   ├── repo.go                      # PostgreSQL repository
 │   │   ├── types.go                     # Entity, DTOs
